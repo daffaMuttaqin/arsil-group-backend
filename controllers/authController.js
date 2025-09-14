@@ -1,17 +1,13 @@
-const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Admin = require("../models/Admin");
 
+// Login
 exports.login = async (req, res) => {
   const { username, password } = req.body;
   try {
-    const result = await pool.query("SELECT * FROM admins WHERE username=$1", [
-      username,
-    ]);
-    if (result.rows.length === 0)
-      return res.status(400).json({ message: "User not found" });
-
-    const admin = result.rows[0];
+    const admin = await Admin.findByUsername(username);
+    if (!admin) return res.status(400).json({ message: "User not found" });
 
     const validPass = await bcrypt.compare(password, admin.password);
     if (!validPass)
@@ -23,6 +19,31 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" }
     );
     res.json({ token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Register (Create Admin)
+exports.register = async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    // cek kalau username sudah ada
+    const existingAdmin = await Admin.findByUsername(username);
+    if (existingAdmin) {
+      return res.status(400).json({ message: "Username already exists" });
+    }
+
+    // hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // simpan ke database
+    const newAdmin = await Admin.create(username, hashedPassword);
+
+    res.status(201).json({
+      message: "Admin registered successfully",
+      admin: { id: newAdmin.id, username: newAdmin.username },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
