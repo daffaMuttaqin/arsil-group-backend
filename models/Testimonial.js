@@ -2,9 +2,7 @@ const pool = require("../config/db");
 
 class Testimonial {
   static async getAll() {
-    const result = await pool.query(
-      "SELECT * FROM testimonials ORDER BY created_at DESC"
-    );
+    const result = await pool.query("SELECT * FROM testimonials");
     return result.rows;
   }
 
@@ -27,7 +25,7 @@ class Testimonial {
   static async update(id, { name, role, quote }) {
     const result = await pool.query(
       `UPDATE testimonials 
-       SET name = $1, role = $2, quote = $3, updated_at = NOW()
+       SET name = $1, role = $2, quote = $3
        WHERE id = $4 RETURNING *`,
       [name, role, quote, id]
     );
