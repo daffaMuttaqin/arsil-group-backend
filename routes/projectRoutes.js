@@ -16,7 +16,7 @@ router.get("/:id", projectController.getProjectById);
 
 // Protected routes (hanya admin yang login bisa akses)
 router.post("/", authMiddleware, uploadFields, projectController.createProject);
-router.put(
+router.patch(
   "/:id",
   authMiddleware,
   uploadFields,

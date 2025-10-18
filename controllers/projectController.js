@@ -83,22 +83,24 @@ exports.updateProject = async (req, res) => {
     const project = await pool.query("SELECT * FROM projects WHERE id=$1", [
       id,
     ]);
-    if (project.rows.length === 0)
+    if (project.rows.length === 0) {
       return res.status(404).json({ message: "Project not found" });
+    }
 
-    const coverUrl = req.files["cover"]
-      ? req.files["cover"][0].path
-      : project.rows[0].cover;
+    // cover: pakai cover lama kalau tidak ada upload baru
+    let coverUrl = project.rows[0].cover;
+    if (req.files && req.files["cover"] && req.files["cover"][0]) {
+      coverUrl = req.files["cover"][0].path;
+    }
 
     const updatedProject = await pool.query(
       `UPDATE projects 
-       SET title=$1, location=$2, cover=$3, category=$4, description=$5, updated_at=NOW()
-       WHERE id=$6 RETURNING *`,
+       SET title=$1, location=$2, cover=$3, category=$4, description=$5 WHERE id=$6 RETURNING *`,
       [title, location, coverUrl, category, description, id]
     );
 
-    // jika ada gambar baru, tambahkan ke project_images
-    if (req.files["images"]) {
+    // jika ada gambar baru, simpan ke project_images
+    if (req.files && req.files["images"]) {
       for (let file of req.files["images"]) {
         await pool.query(
           "INSERT INTO project_images (project_id, image_url) VALUES ($1,$2)",
@@ -107,8 +109,18 @@ exports.updateProject = async (req, res) => {
       }
     }
 
-    res.json(updatedProject.rows[0]);
+    // ambil ulang images biar konsisten dengan frontend
+    const images = await pool.query(
+      "SELECT * FROM project_images WHERE project_id=$1",
+      [id]
+    );
+
+    res.json({
+      ...updatedProject.rows[0],
+      images: images.rows.map((i) => i.image_url),
+    });
   } catch (err) {
+    console.error("Update project error:", err); // 👈 log detail biar kelihatan di console
     res.status(500).json({ error: err.message });
   }
 };
