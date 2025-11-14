@@ -14,5 +14,10 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/auth", authRoutes);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Test route
+app.get("/", (req, res) => {
+  res.send("✅ Express backend is running on Vercel!");
+});
+
+// ❗ Penting untuk Vercel:
+module.exports = app;
